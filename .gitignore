@@ -116,3 +116,9 @@ live_screenshot*.png
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Local iOS integration runtime
+.env.ios
+.cache/
+artifacts/
+traces/

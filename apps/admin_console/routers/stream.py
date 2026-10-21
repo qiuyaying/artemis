@@ -25,6 +25,8 @@ try:
 except ImportError:
     from apps.admin_console.services.device_stream_service import device_stream_service
 
+from apps.admin_console.services.ios_device_service import ios_device_service
+
 router = APIRouter(tags=["stream"])
 
 
@@ -32,7 +34,7 @@ router = APIRouter(tags=["stream"])
 async def stream_device_live():
     """Streams live device screen frames as multipart MJPEG."""
     return StreamingResponse(
-        device_stream_service.mjpeg_frame_generator(),
+        ios_device_service.frames() if ios_device_service.platform == "ios" else device_stream_service.mjpeg_frame_generator(),
         media_type="multipart/x-mixed-replace; boundary=frame",
         headers={
             "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
@@ -46,6 +48,9 @@ async def stream_device_live():
 @router.get("/api/stream/device-state")
 async def get_device_stream_state():
     """Returns whether an ADB device is connected and live streaming is available."""
+    if ios_device_service.platform == "ios":
+        status = await ios_device_service.status()
+        return JSONResponse({"connected": status["ready"], "serial": (status["target"] or {}).get("device_id"), "platform": "ios", "live_stream_url": "/api/stream/device-live" if status["ready"] else None})
     serial = await device_stream_service.get_device_serial()
     return JSONResponse(
         {

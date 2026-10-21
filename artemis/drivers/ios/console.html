@@ -1,0 +1,38 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>Artemis · iOS 接入控制台</title>
+<style>body{font:16px system-ui;background:#111827;color:#e5e7eb;margin:32px}main{display:flex;gap:32px}img{max-height:76vh;max-width:42vw;border-radius:20px;cursor:crosshair}section{max-width:600px}button,input,select,textarea{padding:10px;margin:5px;border-radius:8px;border:1px solid #64748b}button{cursor:pointer}button:disabled{opacity:.4;cursor:default}textarea{display:block;width:95%;box-sizing:border-box}fieldset{border:1px solid #475569;border-radius:12px;margin-bottom:14px}#taskStatus{max-height:22vh}pre{white-space:pre-wrap;background:#1f2937;padding:16px;max-height:32vh;overflow:auto}.muted{color:#94a3b8}input{max-width:90%;box-sizing:border-box}#device{overflow-wrap:anywhere}@media(max-width:760px){body{margin:18px}h1{font-size:24px}main{flex-direction:column;gap:16px}img{max-width:100%;max-height:52vh;align-self:center}section{max-width:100%}pre{font-size:12px}}</style>
+<h1>Artemis · iOS 接入控制台</h1><p class="muted">提交自然语言任务，或点击设备画面手动操作。Agent 运行期间锁定手动控制；画面保留为运行前截图，结束后刷新。</p>
+<main><img id="screen" alt="正在连接 iOS…"><section><p id="device"></p>
+<fieldset><legend>Agent 任务</legend>
+<label>模型 <select id="model"><option value="gemini">Gemini</option><option value="qwen">Qwen API</option></select></label>
+<label>模式 <select id="profile"><option value="flash">Flash</option><option value="pro">Pro</option></select></label>
+<textarea id="goal" rows="3" placeholder="例如：打开设置，确认主页面显示设置标题，不修改任何设置。"></textarea>
+<label>步骤上限 <input id="steps" type="number" min="1" max="100" value="12" style="width:80px"></label>
+<label>超时（秒）<input id="timeout" type="number" min="10" max="1800" value="240" style="width:90px"></label>
+<button id="run">运行任务</button><button id="cancel" disabled>取消任务</button>
+<pre id="taskStatus" aria-live="polite">正在读取任务状态…</pre>
+</fieldset><div id="manual"><button id="refresh">刷新画面</button><button id="home">主屏幕</button><hr>
+<input id="bundle" placeholder="应用 Bundle ID" value="com.apple.Preferences"><button id="launch">启动应用</button><hr>
+<input id="text" placeholder="输入到当前焦点"><button id="type">追加输入</button><hr>
+<button id="up">向上滑动</button><button id="down">向下滑动</button><pre id="log">正在连接…</pre></div></section></main>
+<script>
+const token='__TOKEN__', $=id=>document.getElementById(id);let busy=false,agentActive=false,wasActive=false;
+async function api(path,body){const r=await fetch(path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json','X-IOS-Token':token},body:body?JSON.stringify(body):undefined});const d=await r.json();if(!r.ok)throw Error(JSON.stringify(d));return d}
+async function refresh(){const d=await api('/api/screen');$('screen').src='data:image/png;base64,'+d.image;$('screen').alt='iOS 设备画面';$('device').textContent=d.device+' · '+d.width+'×'+d.height+' · '+d.app;}
+async function action(name,args){if(busy||agentActive)return;busy=true;try{$('log').textContent=JSON.stringify(await api('/api/action',{name,arguments:args}),null,2);await refresh()}catch(e){$('log').textContent=String(e)}finally{busy=false}}
+$('screen').onclick=e=>{const r=e.target.getBoundingClientRect();action('click',{target:[Math.floor((e.clientX-r.left)/r.width*1000),Math.floor((e.clientY-r.top)/r.height*1000)]})};
+$('home').onclick=()=>action('press_key',{key:'home'});$('launch').onclick=()=>action('manage_app',{action:'launch',app_name:$('bundle').value});$('type').onclick=()=>action('input_text',{text:$('text').value,clear_exist:false});
+$('up').onclick=()=>action('swipe',{start:[500,800],end:[500,200]});$('down').onclick=()=>action('swipe',{start:[500,200],end:[500,800]});
+async function poll(){
+ try{const d=await api('/api/task');agentActive=d.active;
+ $('run').disabled=!d.enabled||d.active; $('cancel').disabled=!d.active;
+ document.querySelectorAll('#manual button,#manual input').forEach(e=>e.disabled=d.active);
+ const labels={queued:'排队中',running:'运行中',cancelling:'正在取消并释放设备',cancelled:'已取消',completed:'已完成（Agent 报告）',failed:'失败',timeout:'已超时'};
+ $('taskStatus').textContent=d.task ? (labels[d.task.status]||d.task.status)+' · '+d.task.model+' / '+d.task.profile+'\n'+d.task.goal+(d.task.result?'\n'+JSON.stringify(d.task.result,null,2):'')+(d.task.error?'\n'+d.task.error:'') : (d.enabled?'可以提交任务':'任务执行入口未配置');
+ if(wasActive&&!d.active)await refresh();wasActive=d.active;
+ }catch(e){$('taskStatus').textContent=String(e)}
+}
+$('run').onclick=async()=>{if(agentActive)return;try{$('run').disabled=true;await api('/api/task',{goal:$('goal').value,model:$('model').value,profile:$('profile').value,max_steps:Number($('steps').value),timeout:Number($('timeout').value)});await poll()}catch(e){$('taskStatus').textContent=String(e);$('run').disabled=false}};
+$('cancel').onclick=async()=>{try{await api('/api/task/cancel',{});await poll()}catch(e){$('taskStatus').textContent=String(e)}};
+setInterval(poll,1500);poll();
+$('refresh').onclick=()=>refresh().catch(e=>$('log').textContent=String(e));refresh().then(()=>$('log').textContent='已连接').catch(e=>$('log').textContent=String(e));
+</script></html>

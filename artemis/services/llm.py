@@ -928,6 +928,7 @@ def _resolve_endpoint(
 
     return ModelEndpoint(
         provider=ModelProvider.from_string(provider_val),
+        extra_body=_get_val(cfg, "extra_body", dict),
         model_name=str(model_val),
         temperature=_get_val(cfg, "temperature", (int, float)) or 0.0,
         timeout_seconds=_get_val(cfg, "timeout", (int, float)) or 60.0,

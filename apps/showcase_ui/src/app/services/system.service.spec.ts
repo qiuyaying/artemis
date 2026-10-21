@@ -30,9 +30,48 @@ describe('SystemService readiness polling', () => {
     service = TestBed.inject(SystemService);
     http = TestBed.inject(HttpTestingController);
     service.stopAutoPolling();
+    http.expectOne("/api/ios/status").flush({platform: "android", ready: false, target: null});
   });
 
   afterEach(() => http.verify());
+
+  it('restores the saved iPhone on Android to iOS switch', () => {
+    service.iosStatus.set({platform: 'android', ready: false, target: {device_id: 'phone', wda_url: 'http://127.0.0.1:8101'}});
+    service.selectPlatform('ios');
+    http.expectOne('/api/ios/devices').flush({devices: []});
+    expect(service.iosBusy()).toBeTrue();
+    expect(service.isDeviceReady()).toBeFalse();
+    const request = http.expectOne('/api/ios/select');
+    expect(request.request.body).toEqual({platform: 'ios', device_id: 'phone', wda_url: 'http://127.0.0.1:8101'});
+    request.flush({platform: 'ios', ready: true, target: {device_id: 'phone'}});
+    expect(service.isDeviceReady()).toBeTrue();
+    expect(service.iosBusy()).toBeFalse();
+  });
+
+  it('does not overwrite a new selection with an older status response', () => {
+    service.refreshIosStatus();
+    const stale = http.expectOne('/api/ios/status');
+    service.connectIos('phone', 'http://127.0.0.1:8101');
+    http.expectOne('/api/ios/select').flush({platform: 'ios', ready: true, target: {device_id: 'phone'}});
+    stale.flush({platform: 'android', ready: false});
+    expect(service.platform()).toBe('ios');
+    expect(service.isDeviceReady()).toBeTrue();
+  });
+
+  it('uses WDA readiness for iOS without requiring Android tools', () => {
+    service.platform.set('ios');
+    service.iosStatus.set({platform: 'ios', ready: true, target: {device_id: 'phone'}});
+    service.readinessReport.set({...report(1), probes: [
+      {id: 'python_runtime', status: 'pass'}, {id: 'system_config', status: 'pass'},
+      {id: 'llm_api_key', status: 'pass'}, {id: 'android_adb', status: 'fail', metadata: {installed: false}},
+      {id: 'toolchain', status: 'fail'}
+    ] as any});
+    expect(service.isReady()).toBeTrue();
+    service.iosStatus.set({platform: 'ios', ready: false});
+    expect(service.isReady()).toBeFalse();
+    service.platform.set('android');
+    expect(service.isReady()).toBeFalse();
+  });
 
   it('shares one HTTP request across overlapping readiness callers', () => {
     let firstTimestamp = 0;

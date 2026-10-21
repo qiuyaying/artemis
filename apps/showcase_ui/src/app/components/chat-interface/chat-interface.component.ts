@@ -1,3 +1,5 @@
+import { LocaleService } from '../../i18n/locale.service';
+import { TranslatePipe } from '../../i18n/translate.pipe';
 /**
  * Copyright 2026 Google LLC
  *
@@ -27,12 +29,13 @@ export type { MarkdownSegment, MarkdownLine, NoteMilestone, ParsedNote };
 @Component({
   selector: 'app-chat-interface',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [TranslatePipe, CommonModule, FormsModule],
   templateUrl: './chat-interface.component.html',
   styleUrl: './chat-interface.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatInterfaceComponent {
+  public locale = inject(LocaleService);
   public agentService = inject(AgentService);
 
   public taskInput: string = '';
@@ -133,7 +136,7 @@ export class ChatInterfaceComponent {
    * Clear all database data/history to start fresh
    */
   public clearHistory(): void {
-    if (!confirm('Are you sure you want to clear all tasks and history? This cannot be undone.')) {
+    if (!confirm(this.locale.translate('Are you sure you want to clear all tasks and history? This cannot be undone.'))) {
       return;
     }
     this.isSubmitting.set(true);
@@ -155,7 +158,7 @@ export class ChatInterfaceComponent {
    */
   public deleteTask(sessionId: string, event: MouseEvent): void {
     event.stopPropagation();
-    if (!confirm(`Are you sure you want to delete this task? This cannot be undone.`)) {
+    if (!confirm(this.locale.translate(`Are you sure you want to delete this task? This cannot be undone.`))) {
       return;
     }
     this.isSubmitting.set(true);

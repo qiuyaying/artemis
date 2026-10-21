@@ -1,3 +1,4 @@
+import { LocaleService } from '../i18n/locale.service';
 /**
  * Copyright 2026 Google LLC
  *
@@ -16,6 +17,7 @@
 
 import { Injectable, signal, inject, computed, DestroyRef, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { SystemService } from './system.service';
 import { Observable } from 'rxjs';
 
 import { Session, ModelInfo, TaskQueueItem, AgentStatusResponse, SessionUsage } from '../core/models/session.model';
@@ -68,6 +70,8 @@ interface SessionVideoResponse {
   providedIn: 'root'
 })
 export class AgentService {
+  private locale = inject(LocaleService);
+  private systemService = inject(SystemService);
   private http = inject(HttpClient);
   private zone = inject(NgZone);
   private activePauseCardKey: string | null = null;
@@ -300,6 +304,13 @@ export class AgentService {
   /**
    * Computed active/viewed session
    */
+  public currentSessionIsIos = computed(() => {
+    const session = this.currentSession();
+    let info = session?.device_info;
+    try { if (typeof info === "string") info = JSON.parse(info); } catch { info = null; }
+    return info?.mobile_platform === "ios" || (this.systemService.platform() === "ios" && session?.device_serial === this.systemService.iosStatus()?.target?.device_id);
+  });
+
   public currentSession = computed(() => {
     const curId = this.currentSessionId();
     if (!curId) return null;
@@ -423,13 +434,19 @@ export class AgentService {
     proTuning?: ProTuningOptions
   ): Observable<any> {
     return new Observable((obs) => {
+      if (this.systemService.platform() === 'ios' &&
+          (this.systemService.iosBusy() || this.systemService.iosStatus()?.platform !== 'ios' || !this.systemService.iosStatus()?.ready)) {
+        obs.error({error: {detail: 'iPhone / iPad 尚未连接就绪，请在首页或 Workspace 选择 iOS 设备并等待连接完成。'}});
+        return;
+      }
       const submittedEvent: StartupProgressEvent = {
         stage: 'submitting',
         message: 'Submitting the task',
         timestamp: Date.now() / 1000
       };
       this.pendingStartupProgress.set([submittedEvent]);
-      const payload: any = { goal, profile };
+      const payload: any = { goal: this.locale.taskGoal(goal), profile, platform: this.systemService.platform() };
+      if (payload.platform === "ios") payload.device_serial = this.systemService.iosStatus()?.target?.device_id;
       if (expectedOutput && expectedOutput.trim()) {
         payload.expected_output = expectedOutput.trim();
       }

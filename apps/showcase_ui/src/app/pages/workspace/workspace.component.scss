@@ -883,3 +883,40 @@ $rose-dark: #dc2626;
     animation: none !important;
   }
 }
+
+.workspace-device-picker {
+  flex: 0 0 auto;
+  max-height: 50vh;
+  overflow: auto;
+  padding: 58px 20px 12px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+  .device-toolbar { display: flex; align-items: center; gap: 12px; }
+  .device-current { flex: 1; min-width: 0; display: grid; gap: 3px; }
+  .device-current span { font-size: 11px; color: #64748b; }
+  strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  button { padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #334155; cursor: pointer; }
+  button.selected, .connect-device { background: #eff6ff; border-color: #2563eb; color: #1d4ed8; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .device-options { display: grid; gap: 10px; padding-top: 14px; }
+  .device-platforms { display: flex; gap: 8px; flex-wrap: wrap; }
+  label { display: grid; gap: 5px; font-size: 12px; }
+  select, input { box-sizing: border-box; width: 100%; min-width: 0; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #334155; }
+  p { margin: 0; font-size: 12px; line-height: 1.5; color: #64748b; }
+  .device-error { color: #b91c1c; }
+}
+.left-panel > app-agent-stream { flex: 1; min-height: 0; overflow: hidden; }
+
+.workspace-profile-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  .profile-label { font-size: 12px; font-weight: 600; }
+  .profile-description { font-size: 12px; color: #64748b; }
+  .workspace-profile-toggle { display: flex; gap: 4px; padding: 3px; background: #f1f5f9; border-radius: 10px; }
+  .workspace-profile-toggle button { min-width: 60px; border-color: transparent; background: transparent; }
+  .workspace-profile-toggle button.selected { background: #eff6ff; border-color: #2563eb; color: #1d4ed8; }
+}

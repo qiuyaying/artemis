@@ -33,6 +33,13 @@ logger = get_logger(__name__)
 
 def create_driver(ctx: "ArtemisContext") -> BaseDeviceDriver:
     """Instantiates the appropriate BaseDeviceDriver based on the runtime context."""
+    if str(getattr(ctx.device, "mobile_platform", "android")) == "ios":
+        from artemis.drivers.ios.wda_driver import IOSWdaDriver
+        endpoint = getattr(ctx.device, "wda_url", None) or os.environ.get("ARTEMIS_IOS_WDA_URL")
+        if not endpoint:
+            raise ValueError("iOS requires an explicit wda_url or ARTEMIS_IOS_WDA_URL")
+        return IOSWdaDriver(ctx.device.device_id, endpoint)
+
     # 1. Cloud mode check. Cloud devices are reached through the gateway's
     # RemoteUIAutomatorClient; ARTEMIS_HIERARCHY_BACKEND does not apply there
     # because the Accessibility Helper needs a local adb forward.

@@ -21,6 +21,7 @@ Anthropic, OpenRouter, and local Ollama/vLLM endpoints.
 
 from enum import StrEnum
 import hashlib
+import json
 import os
 from typing import Any
 
@@ -90,6 +91,7 @@ class ModelEndpoint(BaseModel):
     provider: ModelProvider = Field(default=ModelProvider.GOOGLE, description="Model provider")
     model_name: str = Field(default="gemini-2.5-flash", description="Model name identifier")
     api_key: str | None = Field(default=None, description="API Key or secret")
+    extra_body: dict | None = None
     api_base: str | None = Field(default=None, description="Custom API endpoint base URL")
     temperature: float = Field(default=0.0, description="Sampling temperature")
     max_tokens: int | None = Field(default=None, description="Maximum completion tokens")
@@ -130,6 +132,7 @@ class ModelEndpoint(BaseModel):
             self.enable_grounding,
             self.api_base,
             api_key_digest,
+            json.dumps(self.extra_body, sort_keys=True),
         )
 
 
@@ -297,6 +300,7 @@ class ModelFactory:
                 "max_tokens": endpoint.max_tokens,
                 "api_key": api_key,
                 "base_url": base_url,
+                "extra_body": endpoint.extra_body,
                 "timeout": endpoint.timeout_seconds,
             }
             if endpoint.reasoning_effort:

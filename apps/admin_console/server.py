@@ -224,6 +224,8 @@ app.include_router(steps.router)
 app.include_router(tasks.router)
 app.include_router(replay.router)
 app.include_router(system.router)
+from apps.admin_console.routers.ios import router as ios_router
+app.include_router(ios_router)
 
 # Mount cloud gateway router for Frappe / Cloud integration if present
 try:

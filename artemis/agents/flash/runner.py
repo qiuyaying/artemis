@@ -296,7 +296,8 @@ class FlashRunner:
         prompt_path = Path(__file__).parent / "flash_runner.md"
         prompt_template = prompt_path.read_text(encoding="utf-8")
         available_tools = frozenset(t.name for t in tools_declaration)
-        return Template(prompt_template).render(goal=self.goal, available_tools=available_tools)
+        from artemis.drivers.ios.policy import guidance
+        return Template(prompt_template).render(goal=self.goal, available_tools=available_tools) + guidance(self.ctx)
 
     # ------------------------------------------------------------------
     # Per-turn helpers (observe / think)

@@ -1,0 +1,87 @@
+{
+  "status": "simulator_device_integration_passed",
+  "base_commit": "351ca8422f7b5b54e80a9c1ce03a222e02415b6b",
+  "branch": "codex/ios-integration",
+  "wda_commit": "3d6a4e03cdd673e540289c610f7e189f8ffea434",
+  "simulator_udid": "F82C65F7-6DA6-4108-AB46-F54742E1C049",
+  "ios_version": "26.5",
+  "unit_and_regression_tests_passed": 67,
+  "smoke": {
+    "kind": "device_integration_not_agent_evaluation",
+    "steps": [
+      {
+        "ok": true,
+        "code": "OK",
+        "action": "manage_app",
+        "message": "manage_app executed; task outcome requires verification",
+        "detail": null,
+        "normalized_coordinates": null,
+        "duration_ms": null
+      },
+      {
+        "ok": true,
+        "code": "OK",
+        "action": "click",
+        "message": "click executed; task outcome requires verification",
+        "detail": null,
+        "normalized_coordinates": null,
+        "duration_ms": null
+      },
+      {
+        "ok": true,
+        "code": "OK",
+        "action": "input_text",
+        "message": "input_text executed; task outcome requires verification",
+        "detail": null,
+        "normalized_coordinates": null,
+        "duration_ms": null
+      },
+      {
+        "ok": true,
+        "code": "OK",
+        "action": "input_text",
+        "message": "input_text executed; task outcome requires verification",
+        "detail": null,
+        "normalized_coordinates": null,
+        "duration_ms": null
+      },
+      {
+        "ok": true,
+        "code": "OK",
+        "action": "swipe",
+        "message": "swipe executed; task outcome requires verification",
+        "detail": null,
+        "normalized_coordinates": null,
+        "duration_ms": null
+      },
+      {
+        "ok": true,
+        "code": "OK",
+        "action": "press_key",
+        "message": "press_key executed; task outcome requires verification",
+        "detail": null,
+        "normalized_coordinates": null,
+        "duration_ms": null
+      }
+    ],
+    "observed_elements": 50,
+    "input_verified": true,
+    "unsupported_back": {
+      "ok": false,
+      "code": "UNSUPPORTED",
+      "action": "press_key",
+      "message": "iOS key is not supported: back; use a visible UI control",
+      "detail": null,
+      "normalized_coordinates": null,
+      "duration_ms": null
+    },
+    "status": "passed"
+  },
+  "console_url": "http://127.0.0.1:8011",
+  "limitations": [
+    "Real device signing/deployment and live verification pending user device selection.",
+    "Existing autonomous run/bootstrap and primary Android dashboard are not yet wired for iOS.",
+    "Recording and arbitrary device shell are unsupported.",
+    "Manual console refreshes on request/after actions; not a video stream."
+  ]
+}

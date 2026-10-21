@@ -113,7 +113,7 @@ class Agent(AgentBase):
             updates = {}
             if target_dev:
                 updates["device_id"] = target_dev
-                updates["device_platform"] = DevicePlatform.ANDROID
+                updates["device_platform"] = config.device_platform or DevicePlatform.ANDROID
             if concurrency_mode:
                 updates["concurrency_mode"] = str(concurrency_mode).strip().lower()
             if max_concurrency is not None:
@@ -125,6 +125,63 @@ class Agent(AgentBase):
         self._tmp_traces_dir = Path(settings.TRACES_PATH)
         self._initialized = False
         self._task_lock = asyncio.Lock()
+
+    async def _init_internal(self, api_key=None, retry_count=5, retry_wait_seconds=5):
+        if self._config.device_platform != DevicePlatform.IOS:
+            return await super()._init_internal(api_key, retry_count, retry_wait_seconds)
+        if self._initialized:
+            return True
+        from urllib.parse import urlparse
+        from artemis.context import DeviceContext
+        endpoint = self._config.ios_wda_url or os.getenv("ARTEMIS_IOS_WDA_URL")
+        if not self._config.device_id or not endpoint or urlparse(endpoint).scheme not in ("http", "https") or not urlparse(endpoint).hostname:
+            raise ValueError("iOS requires an explicit device ID and HTTP(S) WDA URL")
+        if os.getenv("ARTEMIS_CLOUD_MODE") == "1":
+            raise ValueError("iOS WDA does not support the Android cloud gateway")
+        # These facilities currently depend on Android shell / screenrecord.
+        self._config = self._config.model_copy(update={
+            "video_recording_tools_enabled": False, "enable_video_ledger": False,
+            "disable_device_probes": True, "force_web_accessibility": False,
+        })
+        self._adb_client = self._ui_adb_client = None
+        self._device_context = DeviceContext(
+            device_id=self._config.device_id, mobile_platform=DevicePlatform.IOS,
+            host_platform="DARWIN", wda_url=endpoint)
+        self._initialized = True
+        return True
+
+    async def _prepare_device_connection(self, context):
+        if context.device.mobile_platform != DevicePlatform.IOS:
+            return
+        from artemis.drivers.factory import get_driver
+        from artemis.mcp.actuators.factory import create_actuator
+        driver = get_driver(context)
+        await driver.connect()
+        context.device.device_width, context.device.device_height = driver.screen_size
+        context.actuator = create_actuator(context)
+
+    async def _cleanup_device_connection(self, context):
+        if context.device.mobile_platform == DevicePlatform.IOS:
+            driver = getattr(context, "_active_driver", None)
+            if driver is not None:
+                try:
+                    await driver.disconnect()
+                finally:
+                    context._active_driver = None
+
+    async def _prepare_app_installation(self, task):
+        if self._config.device_platform == DevicePlatform.IOS:
+            if task.request.app_path:
+                raise ValueError("Install the iOS app with Xcode before running a task; APK installation is unsupported")
+            return
+        return await super()._prepare_app_installation(task)
+
+    async def _prepare_app_lock(self, task, context):
+        if context.device.mobile_platform == DevicePlatform.IOS:
+            if task.request.locked_app_package:
+                raise ValueError("iOS app locking is unsupported; launch the bundle ID using manage_app")
+            return
+        return await super()._prepare_app_lock(task, context)
 
     async def _prewarm_llm_connections(self, api_key: str | None = None):
         """Pre-warms the HTTP2/gRPC connection pools for both Native GenAI and LangChain clients in the background."""
@@ -210,6 +267,8 @@ class Agent(AgentBase):
 
     async def _ensure_device_unlocked(self) -> None:
         """Reject secure keyguard instead of allowing an agent to guess credentials."""
+        if getattr(getattr(self, "_config", None), "device_platform", None) == DevicePlatform.IOS:
+            return  # WDA requires an already-unlocked device; never guess credentials.
         if self._adb_client is None:
             raise AgentError("ADB client is not initialized.")
 

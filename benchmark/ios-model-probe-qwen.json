@@ -1,0 +1,16 @@
+{
+  "provider": "qwen",
+  "model": "qwen3.7-plus",
+  "test": "synthetic image + function call",
+  "passed": true,
+  "tool_calls": [
+    {
+      "name": "report_color",
+      "args": {
+        "color": "red"
+      },
+      "id": "call_758e8272ae974a00b978b009",
+      "type": "tool_call"
+    }
+  ]
+}

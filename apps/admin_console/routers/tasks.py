@@ -113,6 +113,26 @@ async def run_task(request: RunRequest):
                 "total_queued": len(state.queue_tasks),
             }
 
+    if request.platform == "ios":
+        from apps.admin_console.services.ios_device_service import ios_device_service
+        target = dict(ios_device_service.target or {})
+        if ios_device_service.platform != 'ios' or not target:
+            raise HTTPException(409, 'Select and connect an iPhone or iPad in System Setup first.')
+        if request.device_serial and request.device_serial != target['device_id']:
+            raise HTTPException(409, 'Selected iOS device changed; refresh the page and submit again.')
+        if request.app_path or request.locked_app_package:
+            raise HTTPException(400, 'iOS app installation and Android app locking are unsupported.')
+        status = await ios_device_service.check(target)
+        if not status['ready']:
+            raise HTTPException(409, status['message'])
+        return await task_queue_service.enqueue_tasks(
+            incoming_goals, profile=request.profile or 'flash',
+            expected_output=request.expected_output, enable_outputter=request.enable_outputter,
+            verification_level=request.verification_level, explorer_mode=request.explorer_mode,
+            device_serial=target['device_id'], ingress=request.ingress or 'frontend',
+            session_id=request.session_id, conversation_id=request.conversation_id,
+            platform='ios', wda_url=target['wda_url'])
+
     # Reject an explicit unknown/offline target before running the more
     # expensive readiness probe. Besides producing a stable SDK response,
     # this avoids probing the currently active device for a serial that can

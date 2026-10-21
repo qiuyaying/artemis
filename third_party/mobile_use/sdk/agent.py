@@ -123,7 +123,7 @@ class AgentBase:
         target_dev = device_serial or device_id
         if target_dev:
             self._config = self._config.model_copy(
-                update={"device_id": target_dev, "device_platform": DevicePlatform.ANDROID}
+                update={"device_id": target_dev, "device_platform": self._config.device_platform or DevicePlatform.ANDROID}
             )
 
         return await self._init_internal(
@@ -516,6 +516,7 @@ class AgentBase:
                 # DataEngine uses a shared database, so a queued task must not
                 # publish a new active session while the current task is still
                 # finishing.
+                await self._prepare_device_connection(context)
                 self._prepare_tracing(task=task, context=context)
                 self._prepare_output_files(task=task)
                 if os.environ.get("ARTEMIS_CLOUD_MODE") != "1":
@@ -762,6 +763,7 @@ class AgentBase:
                 finally:
                     if os.environ.get("ARTEMIS_CLOUD_MODE") != "1":
                         try:
+                            await self._cleanup_device_connection(context)
                             if self._ui_adb_client is not None:
                                 await asyncio.to_thread(self._ui_adb_client.disconnect)
                         finally:
@@ -831,6 +833,12 @@ class AgentBase:
         screenshot = await asyncio.to_thread(device.screenshot)
         logger.info("Screenshot captured from local Android device")
         return screenshot
+
+    async def _prepare_device_connection(self, context: ArtemisContext):
+        """Connect platform transport after acquiring the device execution lease."""
+
+    async def _cleanup_device_connection(self, context: ArtemisContext):
+        """Close platform transport before releasing the device execution lease."""
 
     async def _prepare_app_installation(self, task: Task) -> str | None:
         """Install app if app_path is specified in the task request.

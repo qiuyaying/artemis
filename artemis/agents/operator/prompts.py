@@ -316,7 +316,8 @@ def render_transcript_static_system(
 
     available = resolve_operator_prompt_tools(ctx)
     static_template = apply_operator_prompt_contract(static_template, available_tools=available)
-    return Template(static_template).render(
+    from artemis.drivers.ios.policy import guidance
+    return guidance(ctx) + Template(static_template).render(
         initial_goal=state.initial_goal,
         subgoals_status="",
         plan_and_history="",

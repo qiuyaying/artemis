@@ -5166,3 +5166,24 @@ $text-light: #94a3b8;
     transform: translateY(0) scale(1);
   }
 }
+
+.platform-picker { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 20px; }
+.ios-connection { display: flex; flex-direction: column; gap: 16px; }
+.ios-connection label { display: flex; flex-direction: column; gap: 8px; }
+.ios-connection input, .ios-connection select { padding: 12px; border: 1px solid #b5bdcd; border-radius: 10px; font: inherit; background: transparent; color: inherit; }
+
+.ios-preview { max-width: 100%; max-height: 560px; object-fit: contain; align-self: center; border-radius: 18px; }
+.platform-picker .mode-tabs { display: flex; gap: 8px; padding: 5px; border-radius: 16px; background: rgba(235, 240, 248, .8); }
+.platform-picker .mode-tab-btn { @include glass-secondary-btn; padding: 10px 24px; border-radius: 12px; font: inherit; font-weight: 600; cursor: pointer; }
+.platform-picker .mode-tab-btn.active { @include glass-primary-btn; }
+.ios-connection button { @include glass-secondary-btn; padding: 12px 18px; border-radius: 12px; font: inherit; font-weight: 600; cursor: pointer; }
+.ios-connection .btn-proceed-launch { @include glass-primary-btn; }
+.ios-connection p { margin: 0; color: $text-secondary; line-height: 1.6; }
+.ios-connection [role='alert'] { color: #b42318; }
+
+.language-picker {
+  display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: 8px 0 20px; color: #64748b; font-size: 13px;
+  button { border: 1px solid #cbd5e1; border-radius: 8px; padding: 7px 12px; background: #fff; color: #334155; cursor: pointer; }
+  button.active { color: #1d4ed8; border-color: #2563eb; background: #eff6ff; }
+}

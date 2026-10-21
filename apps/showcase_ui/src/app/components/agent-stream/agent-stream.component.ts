@@ -1,3 +1,6 @@
+import { buildResultSummary } from '../../utils/result-summary.util';
+import { LocaleService } from '../../i18n/locale.service';
+import { TranslatePipe } from '../../i18n/translate.pipe';
 /**
  * Copyright 2026 Google LLC
  *
@@ -233,12 +236,13 @@ export type { MarkdownSegment, MarkdownLine, NoteMilestone, ParsedNote, StreamRe
 @Component({
   selector: 'app-agent-stream',
   standalone: true,
-  imports: [CommonModule, FormsModule, OverlayModule],
+  imports: [TranslatePipe, CommonModule, FormsModule, OverlayModule],
   templateUrl: './agent-stream.component.html',
   styleUrl: './agent-stream.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AgentStreamComponent implements AfterViewInit {
+  public locale = inject(LocaleService);
   public agentService = inject(AgentService);
   private http = inject(HttpClient);
   private destroyRef = inject(DestroyRef);
@@ -468,6 +472,14 @@ export class AgentStreamComponent implements AfterViewInit {
   public consolidatedBlocks = computed<StepBlock[]>(() => {
     return consolidateLogsToBlocks(this.filteredLogs());
   });
+
+  public resultSummary = computed(() => buildResultSummary(this.consolidatedBlocks()));
+  public readonly resultCategories = [
+    {key: 'passed' as const, label: 'PASS · Passed'},
+    {key: 'failed' as const, label: 'FAIL · Failed'},
+    {key: 'inconclusive' as const, label: 'Pending confirmation'},
+    {key: 'unchecked' as const, label: 'Not tested'}
+  ];
 
   public phases = computed<PhaseBlock[]>(() => {
     const currentSession = this.agentService.sessions().find(s => s.session_id === this.agentService.currentSessionId());
@@ -929,7 +941,7 @@ export class AgentStreamComponent implements AfterViewInit {
 
   public deleteTask(sessionId: string, event?: Event): void {
     if (event) event.stopPropagation();
-    if (!confirm(`Are you sure you want to delete this task? This cannot be undone.`)) {
+    if (!confirm(this.locale.translate(`Are you sure you want to delete this task? This cannot be undone.`))) {
       return;
     }
     this.agentService.deleteSession(sessionId).subscribe({
@@ -1554,7 +1566,7 @@ export class AgentStreamComponent implements AfterViewInit {
 
   public getScreenRecordingButtonTitle(): string {
     if (this.agentService.isCurrentSessionRunning()) {
-      return 'Task is currently running (Recording screen)';
+      return this.agentService.currentSessionIsIos() ? 'View live iOS screen (video recording unavailable)' : 'Task is currently running (Recording screen)';
     }
     if (this.agentService.currentSessionRecordingStatus() === 'processing') {
       return 'Preparing screen recording...';

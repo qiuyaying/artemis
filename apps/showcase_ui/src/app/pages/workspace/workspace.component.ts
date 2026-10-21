@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../i18n/translate.pipe';
 /**
  * Copyright 2026 Google LLC
  *
@@ -20,12 +21,13 @@ import { FormsModule } from '@angular/forms';
 import { AgentStreamComponent } from '../../components/agent-stream/agent-stream.component';
 import { ChatInterfaceComponent } from '../../components/chat-interface/chat-interface.component';
 import { FloatingVideoPlayerComponent } from '../../components/floating-video-player/floating-video-player.component';
+import { SystemService } from '../../services/system.service';
 import { AgentService } from '../../services/agent.service';
 
 @Component({
   selector: 'app-workspace',
   standalone: true,
-  imports: [
+  imports: [TranslatePipe,
     FormsModule,
     AgentStreamComponent,
     ChatInterfaceComponent,
@@ -37,6 +39,64 @@ import { AgentService } from '../../services/agent.service';
 })
 export class WorkspaceComponent implements OnInit {
   public agentService = inject(AgentService);
+  public systemService = inject(SystemService);
+  public devicePickerOpen = signal(false);
+  public deviceError = signal('');
+  public androidDeviceId = '';
+  public iosDeviceId = '';
+  public iosWdaUrl = '';
+  public deviceSelectionLocked = computed(() =>
+    this.isSubmitting() || this.systemService.iosBusy() || this.systemService.isLoading() ||
+    this.agentService.activeTasks().length > 0 ||
+    this.agentService.sessions().some(s => ['running', 'paused', 'queued', 'pending'].includes(s.status || ''))
+  );
+  public currentDeviceLabel = computed(() => {
+    if (this.systemService.platform() === 'ios') {
+      const target = this.systemService.iosStatus()?.target;
+      return target?.name || target?.device_id || 'Select iPhone / iPad';
+    }
+    const device = this.systemService.activeDevice();
+    return device?.model || device?.serial || 'Select Android device';
+  });
+
+  public toggleDevicePicker(): void {
+    this.devicePickerOpen.update(open => !open);
+    if (this.devicePickerOpen()) {
+      this.iosDeviceId = this.systemService.iosStatus()?.target?.device_id || '';
+      this.iosWdaUrl = this.systemService.iosStatus()?.target?.wda_url || 'http://127.0.0.1:8101';
+      this.androidDeviceId = this.systemService.activeDevice()?.serial || '';
+      this.refreshDevices();
+    }
+  }
+
+  public refreshDevices(): void {
+    this.deviceError.set('');
+    this.systemService.discoverIos();
+    this.systemService.fetchReadiness(true).subscribe({
+      error: err => this.deviceError.set(err.error?.detail || 'Could not refresh Android devices')
+    });
+  }
+
+  public choosePlatform(platform: 'android' | 'ios'): void {
+    if (this.deviceSelectionLocked() || this.systemService.platform() === platform) return;
+    this.deviceError.set('');
+    this.systemService.selectPlatform(platform);
+  }
+
+  public connectDevice(): void {
+    if (this.deviceSelectionLocked()) return;
+    this.deviceError.set('');
+    if (this.systemService.platform() === 'ios') {
+      if (this.iosDeviceId && this.iosWdaUrl.trim()) {
+        this.systemService.connectIos(this.iosDeviceId, this.iosWdaUrl.trim());
+      }
+    } else if (this.androidDeviceId) {
+      this.systemService.selectDevice(this.androidDeviceId).subscribe({
+        error: err => this.deviceError.set(err.error?.detail || 'Could not select Android device')
+      });
+    }
+  }
+
   private zone = inject(NgZone);
   private destroyRef = inject(DestroyRef);
 
@@ -220,7 +280,7 @@ export class WorkspaceComponent implements OnInit {
    */
   public submitTask(): void {
     const goal = this.taskInput.trim();
-    if (!goal || this.isSubmitting()) {
+    if (!goal || this.isSubmitting() || this.systemService.iosBusy() || this.systemService.isLoading()) {
       return;
     }
 

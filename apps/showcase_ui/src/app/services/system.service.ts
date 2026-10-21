@@ -33,6 +33,63 @@ import {
 export class SystemService {
   private http = inject(HttpClient);
 
+  public platform = signal<'android' | 'ios'>('android');
+  public iosStatus = signal<any>(null);
+  public iosDevices = signal<any[]>([]);
+  public iosError = signal('');
+  public iosBusy = signal(false);
+  private iosStatusPending = false;
+  private iosInventoryLoaded = false;
+  private selectionRevision = 0;
+
+  public refreshIosStatus(): void {
+    if (this.iosStatusPending || this.iosBusy()) return;
+    const revision = this.selectionRevision;
+    this.iosStatusPending = true;
+    this.http.get<any>('/api/ios/status').subscribe({
+      next: value => {
+        if (revision !== this.selectionRevision) return;
+        this.iosStatus.set(value); this.platform.set(value.platform);
+        if (value.platform === "ios" && !this.iosInventoryLoaded) { this.iosInventoryLoaded = true; this.discoverIos(); }
+      },
+      error: () => { if (revision === this.selectionRevision) this.iosStatus.set(null); this.iosStatusPending = false; },
+      complete: () => { this.iosStatusPending = false; }
+    });
+  }
+  public discoverIos(): void {
+    this.iosError.set('');
+    this.http.get<any>('/api/ios/devices').subscribe({
+      next: value => { this.iosDevices.set(value.devices); this.iosError.set((value.warnings || []).join(' ')); },
+      error: err => this.iosError.set(err.error?.detail || 'Could not discover iOS devices')
+    });
+  }
+  public selectPlatform(platform: 'android' | 'ios'): void {
+    if (this.iosBusy()) return;
+    if (platform === 'ios') {
+      this.selectionRevision++;
+      this.platform.set('ios');
+      this.discoverIos();
+      const saved = this.iosStatus()?.target;
+      if (saved?.device_id && saved?.wda_url) this.connectIos(saved.device_id, saved.wda_url);
+      return;
+    }
+    this.selectionRevision++;
+    this.iosBusy.set(true);
+    this.http.post<any>('/api/ios/select', {platform}).subscribe({
+      next: value => { this.platform.set('android'); this.iosStatus.set(value); this.iosBusy.set(false); },
+      error: err => { this.iosBusy.set(false); this.iosError.set(err.error?.detail || 'Could not change platform'); }
+    });
+  }
+  public connectIos(deviceId: string, wdaUrl: string): void {
+    if (this.iosBusy()) return;
+    this.selectionRevision++;
+    this.iosBusy.set(true); this.iosError.set('');
+    this.http.post<any>('/api/ios/select', {platform: 'ios', device_id: deviceId, wda_url: wdaUrl}).subscribe({
+      next: value => { this.iosStatus.set(value); this.platform.set('ios'); this.iosBusy.set(false); },
+      error: err => { this.iosBusy.set(false); this.iosStatus.update(value => value ? {...value, ready: false} : value); this.iosError.set(err.error?.detail || 'Could not connect to iOS device'); }
+    });
+  }
+
   // Core reactive signals
   public readinessReport = signal<SystemReadinessReport | null>(null);
   public hasReadinessReport = computed(() => this.readinessReport() !== null);
@@ -70,7 +127,7 @@ export class SystemService {
     const cfgOk = cfg?.status === 'pass';
     const adbInstalled = adb?.metadata?.['installed'] ?? (adb?.status !== 'fail');
     const tcOk = tc?.status === 'pass' || tc?.is_blocker === false;
-    return pyOk && cfgOk && adbInstalled && tcOk;
+    return this.platform() === 'ios' ? pyOk && cfgOk : pyOk && cfgOk && adbInstalled && tcOk;
   });
 
   public isSkipCredentialsCheck = signal<boolean>(false);
@@ -84,6 +141,8 @@ export class SystemService {
   });
 
   public isDeviceReady = computed(() => {
+    if (this.iosBusy()) return false;
+    if (this.platform() === 'ios') return this.iosStatus()?.platform === 'ios' && this.iosStatus()?.ready === true;
     const adb = this.adbProbe();
     return adb?.status === 'pass';
   });
@@ -159,6 +218,7 @@ export class SystemService {
   };
 
   constructor() {
+    this.refreshIosStatus();
     this.startAutoPolling(3000);
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', this.onVisibilityChange);
@@ -229,6 +289,7 @@ export class SystemService {
       tap({
         next: (report) => {
           this.applyReadinessReport(report);
+          if (this.iosStatus()?.platform === "ios") this.refreshIosStatus();
         },
         error: (err) => {
           console.error('Failed to fetch system readiness:', err);

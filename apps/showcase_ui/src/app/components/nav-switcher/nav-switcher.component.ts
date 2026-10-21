@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../i18n/translate.pipe';
 /**
  * Copyright 2026 Google LLC
  *
@@ -21,27 +22,27 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 @Component({
   selector: 'app-nav-switcher',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [TranslatePipe, RouterLink, RouterLinkActive],
   template: `
-    <nav class="floating-nav-switcher" aria-label="Main Navigation">
+    <nav class="floating-nav-switcher" [aria-label]="'Main Navigation' | t">
       <a 
         routerLink="/" 
         routerLinkActive="active" 
         [routerLinkActiveOptions]="{exact: true}"
         class="nav-tab-btn"
-        title="Return to Home Launcher to start a new task"
+        [title]="'Return to Home Launcher to start a new task' | t"
       >
         <span class="material-symbols-outlined tab-icon">add_task</span>
-        <span class="tab-label">New / Home</span>
+        <span class="tab-label">{{ 'New / Home' | t }}</span>
       </a>
       <a 
         routerLink="/workspace" 
         routerLinkActive="active" 
         class="nav-tab-btn"
-        title="Open Workspace"
+        [title]="'Open Workspace' | t"
       >
         <span class="material-symbols-outlined tab-icon">space_dashboard</span>
-        <span class="tab-label">Workspace</span>
+        <span class="tab-label">{{ 'Workspace' | t }}</span>
       </a>
     </nav>
   `,

@@ -72,6 +72,10 @@ class AgentConfigBuilder(AgentConfigBuilderBase):
         self._flash = agent_cfg.flash
         self._pro = agent_cfg.pro
 
+    def for_ios_device(self, device_id: str, wda_url: str) -> "AgentConfigBuilder":
+        self._ios_wda_url = wda_url
+        return self.for_device(DevicePlatform.IOS, device_id)
+
     def for_device_serial(self, device_serial: str) -> "AgentConfigBuilder":
         """Target a specific Android device by its ADB serial number."""
         return self.for_device(DevicePlatform.ANDROID, device_serial)
@@ -425,6 +429,7 @@ class AgentConfigBuilder(AgentConfigBuilderBase):
                 or os.environ.get("ARTEMIS_DEVICE_ID")
                 or os.environ.get("ADB_DEVICE_SERIAL")
             ),
+            "ios_wda_url": getattr(self, "_ios_wda_url", None),
             "video_recording_tools_enabled": self._video_recording_tools_enabled,
             "force_web_accessibility": self._force_web_accessibility,
             "disable_checker": self._disable_checker,

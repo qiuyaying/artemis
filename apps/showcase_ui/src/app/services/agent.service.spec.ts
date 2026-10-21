@@ -6,6 +6,8 @@ import { AgentService } from './agent.service';
 describe('AgentService live LLM retry timeline', () => {
   function createServiceWithoutPolling(): AgentService {
     const service = Object.create(AgentService.prototype) as AgentService;
+    (service as any).locale = { taskGoal: (goal: string) => goal };
+    (service as any).systemService = {platform: signal("android"), iosStatus: signal(null)};
     service.sessionLogs = signal<any[]>([]);
     service.isSessionContentLoading = signal(false);
     service.startupProgressBySession = signal({});
@@ -220,6 +222,7 @@ describe('AgentService live LLM retry timeline', () => {
 describe('AgentService recording finalization lifecycle', () => {
   function createVideoService(response: any): AgentService {
     const service = Object.create(AgentService.prototype) as AgentService;
+    (service as any).locale = { taskGoal: (goal: string) => goal };
     (service as any).http = { get: () => of(response) };
     (service as any).rawSessions = signal<any[]>([
       { session_id: 'session-1', status: 'completed', recording_status: 'recording' }
@@ -298,6 +301,7 @@ describe('AgentService recording finalization lifecycle', () => {
 describe('AgentService video analysis seeking', () => {
   it('publishes repeatable, clamped seek requests for the floating player', () => {
     const service = Object.create(AgentService.prototype) as AgentService;
+    (service as any).locale = { taskGoal: (goal: string) => goal };
     service.videoSeekRequest = signal<{ seconds: number; requestId: number } | null>(null);
     (service as any).videoSeekRequestId = 0;
 
@@ -376,6 +380,7 @@ describe('AgentService task cancellation and active session tracking', () => {
 
   it('stops a specific session by passing its session_id', () => {
     const service = Object.create(AgentService.prototype) as AgentService;
+    (service as any).locale = { taskGoal: (goal: string) => goal };
     service.currentSessionId = signal<string | null>('sess-2');
     service.runningSessionId = signal<string | null>('sess-1');
     service.runningGoal = signal<string | null>('Goal 1');

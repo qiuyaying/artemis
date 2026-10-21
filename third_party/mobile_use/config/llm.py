@@ -57,6 +57,7 @@ class LLM(BaseModel):
     model_config = {"ignored_types": (CyFunctionDetector,)}
     provider: LLMProvider
     model: str
+    extra_body: dict | None = None
     temperature: float | None = None
     thinking_budget: int | None = None
     thinking_level: Literal["minimal", "low", "medium", "high"] | None = None

@@ -1,0 +1,36 @@
+{
+  "qwen": {
+    "type": "openai-compatible",
+    "displayName": "Qwen DashScope API",
+    "aliases": [
+      "qianwen",
+      "dashscope"
+    ],
+    "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "baseUrlEnv": [
+      "DASHSCOPE_BASE_URL",
+      "QWEN_BASE_URL"
+    ],
+    "apiKeyEnv": [
+      "DASHSCOPE_API_KEY",
+      "QWEN_API_KEY"
+    ],
+    "modelEnv": [
+      "QWEN_MODEL",
+      "DASHSCOPE_MODEL"
+    ],
+    "defaultModel": "qwen3.7-plus",
+    "defaultExtraBody": {
+      "enable_thinking": false
+    },
+    "supportsImages": true,
+    "extraBodyEnv": [
+      "QWEN_EXTRA_BODY_JSON",
+      "DASHSCOPE_EXTRA_BODY_JSON"
+    ],
+    "headersEnv": [
+      "QWEN_HEADERS_JSON",
+      "DASHSCOPE_HEADERS_JSON"
+    ]
+  }
+}

@@ -27,9 +27,16 @@ def get_tools_from_wrappers(
     wrappers: list[ToolWrapper],
 ) -> list[BaseTool]:
     """Instantiate the available tools of ``wrappers``, traced into the data engine."""
-    return build_tools_from_wrappers(
+    tools = build_tools_from_wrappers(
         ctx, wrappers, wrap_tool=lambda t: trace_langchain_tool(t, ctx)
     )
+    if str(getattr(ctx.device, "mobile_platform", "")) == "ios":
+        from artemis.drivers.ios.policy import BLOCKED_TOOLS
+        from artemis.mcp.action_manifest import DEVICE_ACTIONS, available_device_actions
+        available = available_device_actions(ctx.actuator)
+        tools = [t for t in tools if t.name not in BLOCKED_TOOLS
+                 and (t.name not in DEVICE_ACTIONS or t.name in available)]
+    return tools
 
 
 def get_tool_by_name(name: str, tools: list[BaseTool]) -> BaseTool | None:

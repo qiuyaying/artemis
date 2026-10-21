@@ -1,0 +1,16 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.8-flash",
+  "test": "synthetic image + function call",
+  "passed": true,
+  "tool_calls": [
+    {
+      "name": "report_color",
+      "args": {
+        "color": "red"
+      },
+      "id": "call_534466",
+      "type": "tool_call"
+    }
+  ]
+}

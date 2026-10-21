@@ -294,6 +294,8 @@ def filter_declarations(
         if _declaration_name(decl) not in DEVICE_ACTIONS or _declaration_name(decl) in available
     ]
 
+    blocked = getattr(actuator, "unsupported_tools", frozenset())
+    kept = [decl for decl in kept if _declaration_name(decl) not in blocked]
     for ext in actuator.extensions():
         if agent in ext.targets:
             kept.append(_extension_declaration(ext))

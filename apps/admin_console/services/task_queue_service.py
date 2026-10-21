@@ -531,6 +531,20 @@ class TaskQueueService:
         if queue_ticket:
             env[DeviceExecutionLock.QUEUE_TICKET_ENV] = str(queue_ticket)
 
+        if task_item.get('platform') == 'ios':
+            env.pop(DeviceExecutionLock.LOCK_SCOPE_ENV, None)
+            cmd = [sys.executable, str(WORKSPACE_ROOT / 'scripts' / 'ios_dashboard_run.py'),
+                   '--device-id', task_item['device_serial'], '--wda-url', task_item['wda_url'],
+                   '--profile', profile, '--goal', goal, '--session-id', str(sess_id)]
+            for flag, value in (('--expected-output', expected_output),
+                                ('--verification-level', verification_level),
+                                ('--explorer-mode', explorer_mode)):
+                if value:
+                    cmd.extend([flag, str(value)])
+            if enable_outputter is not None:
+                cmd.append('--enable-outputter' if enable_outputter else '--disable-outputter')
+            return cmd, env
+
         cmd = [
             sys.executable,
             "-m",
@@ -604,7 +618,7 @@ class TaskQueueService:
                 device_id=device_serial or "pending",
                 session_id=str(sess_id) if sess_id else None,
                 ingress=ingress_type,
-                lock_scope=target.lock_scope,
+                lock_scope=None if task_item.get("platform") == "ios" else target.lock_scope,
             )
             if not transferred:
                 print(
@@ -1004,6 +1018,7 @@ class TaskQueueService:
         conversation_id: str | None,
         verification_level: str | None = None,
         explorer_mode: str | None = None,
+        platform: str = "android",
     ) -> dict[str, Any]:
         """Reserve a device slot and build one pending queue item for a goal."""
         sess_id = single_session_id if single_session_id else str(uuid.uuid4())
@@ -1015,7 +1030,7 @@ class TaskQueueService:
             device_id=assigned_serial or "pending",
             session_id=sess_id,
             ingress=ingress,
-            lock_scope=endpoint.identity,
+            lock_scope=None if platform == "ios" else endpoint.identity,
         )
         return {
             "session_id": sess_id,
@@ -1052,6 +1067,8 @@ class TaskQueueService:
         conversation_id: str | None = None,
         verification_level: str | None = None,
         explorer_mode: str | None = None,
+        platform: str = "android",
+        wda_url: str | None = None,
     ) -> dict[str, Any]:
         """Enqueues one or more goals and wakes up the background worker.
 
@@ -1067,7 +1084,7 @@ class TaskQueueService:
 
         enqueued_tasks = []
         now = time.time()
-        endpoint = current_adb_endpoint()
+        endpoint = AdbEndpoint.local() if platform == "ios" else current_adb_endpoint()
 
         duplicate_response = cls._find_duplicate_submission(
             goals, session_id, device_serial, endpoint, now
@@ -1075,7 +1092,7 @@ class TaskQueueService:
         if duplicate_response is not None:
             return duplicate_response
 
-        rejection_response = await cls._reject_unavailable_device(device_serial)
+        rejection_response = await cls._reject_unavailable_device(device_serial) if platform == "android" else None
         if rejection_response is not None:
             return rejection_response
 
@@ -1105,7 +1122,9 @@ class TaskQueueService:
                 conversation_id,
                 verification_level=verification_level,
                 explorer_mode=explorer_mode,
+                platform=platform,
             )
+            task_item.update(platform=platform, wda_url=wda_url)
             state.queue_items.append(task_item)
             enqueued_tasks.append(task_item)
             cls._broadcast_startup_progress(

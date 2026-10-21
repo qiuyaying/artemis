@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-21",
+  "platform": "iOS simulator",
+  "device_id": "F82C65F7-6DA6-4108-AB46-F54742E1C049",
+  "unit_regressions_passed": 175,
+  "model_probes": {
+    "gemini-3.8-flash": "passed",
+    "qwen3.7-plus": "passed"
+  },
+  "agent_checks": {
+    "gemini_flash": "completed; independently observed Settings title",
+    "gemini_pro": "completed; final checker 1 passed",
+    "qwen_flash": "completed; manage_app invoked from Home, independently observed Settings title"
+  },
+  "not_verified": [
+    "real iPhone",
+    "Qwen Pro",
+    "broad task success rate"
+  ],
+  "remaining": [
+    "real-device deployment/verification"
+  ],
+  "credentials": "read at startup from APP-tester; not copied",
+  "gui_checks": [
+    "Gemini Flash submitted and completed via browser",
+    "running task cancelled via browser; WDA DELETE confirmed",
+    "manual HOME succeeded after cancellation"
+  ],
+  "real_device_blocker": "APP-tester MIDSCENE_IOS_DEVICE_ID is empty; no real device selected"
+}

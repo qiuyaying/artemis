@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../i18n/translate.pipe';
 /**
  * Copyright 2026 Google LLC
  *
@@ -38,7 +39,7 @@ import { locateTimelineTime, sessionTimeToTimelineTime } from '../../utils/recor
 @Component({
   selector: 'app-floating-video-player',
   standalone: true,
-  imports: [FormsModule],
+  imports: [TranslatePipe, FormsModule],
   templateUrl: './floating-video-player.component.html',
   styleUrl: './floating-video-player.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

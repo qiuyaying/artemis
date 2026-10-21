@@ -3971,3 +3971,19 @@ $stream-row-height: 25px;
     }
   }
 }
+
+.result-summary {
+  margin: 48px 0 20px; padding: 16px; border: 1px solid #cbd5e1; border-radius: 12px; background: #fff; color: #334155;
+  .result-summary-heading { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  p, .result-summary-heading span { font-size: 12px; line-height: 1.6; color: #64748b; }
+  .result-counts { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }
+  .result-count { display: grid; gap: 6px; padding: 10px; border-radius: 8px; background: #f1f5f9; font-size: 12px; }
+  .result-count strong { font-size: 23px; }
+  .passed { background: #ecfdf5; color: #047857; }
+  .failed { background: #fef2f2; color: #b91c1c; }
+  .inconclusive { background: #fffbeb; color: #92400e; }
+  summary { cursor: pointer; font-size: 13px; }
+  .result-group { margin-top: 14px; font-size: 13px; }
+  .result-item { padding: 8px 0; border-bottom: 1px solid #e2e8f0; overflow-wrap: anywhere; }
+  .result-item p { margin: 4px 0; white-space: pre-wrap; }
+}

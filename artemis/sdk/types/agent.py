@@ -41,6 +41,8 @@ class AgentConfig(AgentConfigBase):
     settings to :class:`AgentConfigBase`.
     """
 
+    ios_wda_url: str | None = None
+
     video_recording_tools_enabled: bool = Field(default_factory=detect_video_tools_enabled)
     force_web_accessibility: bool = False
     disable_checker: bool = False

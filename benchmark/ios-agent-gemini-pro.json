@@ -1,0 +1,17 @@
+{
+  "model": "gemini-3.8-flash",
+  "profile": "pro",
+  "result": {
+    "test_summary": {
+      "task_status": "completed",
+      "passed": 1,
+      "failed": 0,
+      "inconclusive": 0,
+      "unchecked": 0,
+      "failed_items": [],
+      "retired": 0,
+      "retired_items": []
+    }
+  },
+  "task_status": "completed"
+}

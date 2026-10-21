@@ -13,9 +13,11 @@
 # limitations under the License.
 
 from pydantic import BaseModel
+from typing import Literal
 
 
 class RunRequest(BaseModel):
+    platform: Literal["android", "ios"] = "android"
     goal: str | None = None
     goals: list[str] | None = None
     profile: str | None = "flash"

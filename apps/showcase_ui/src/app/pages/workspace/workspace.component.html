@@ -17,6 +17,54 @@ limitations under the License.
 <div class="workspace-container" [class.is-resizing]="isDragging()">
   <!-- Left Main Panel: Raw Agent Log Stream -->
   <main class="left-panel glass-panel">
+    <section class="workspace-device-picker" [attr.aria-label]="'Task device' | t">
+      <div class="device-toolbar">
+        <span class="material-symbols-outlined">devices</span>
+        <div class="device-current"><span>{{ 'Task device' | t }} · {{ systemService.platform() === 'ios' ? 'iOS' : 'Android' }}</span><strong>{{ currentDeviceLabel() | t }}</strong></div>
+        <button type="button" (click)="toggleDevicePicker()" [attr.aria-expanded]="devicePickerOpen()" aria-controls="workspace-device-options">{{ devicePickerOpen() ? ('Close' | t) : ('Select device' | t) }}</button>
+      </div>
+      <div class="workspace-profile-row">
+        <span class="profile-label">{{ 'New task mode' | t }}</span>
+        <div class="workspace-profile-toggle" role="group" [attr.aria-label]="'New task mode' | t">
+          <button type="button" [class.selected]="selectedProfile() === 'flash'" [attr.aria-pressed]="selectedProfile() === 'flash'" [disabled]="isSubmitting()" (click)="setProfile('flash')" [title]="'Fast, reactive execution' | t">Flash</button>
+          <button type="button" [class.selected]="selectedProfile() === 'pro'" [attr.aria-pressed]="selectedProfile() === 'pro'" [disabled]="isSubmitting()" (click)="setProfile('pro')" [title]="'Plans first, verifies results and recovers from blocked steps' | t">Pro</button>
+        </div>
+        <span class="profile-description">{{ selectedProfile() === 'flash' ? ('Fast, reactive execution' | t) : ('Plan, execute and verify' | t) }}</span>
+      </div>
+      @if (devicePickerOpen()) {
+        <div id="workspace-device-options" class="device-options">
+          <div class="device-platforms">
+            <button type="button" [class.selected]="systemService.platform() === 'android'" [disabled]="deviceSelectionLocked()" (click)="choosePlatform('android')">Android</button>
+            <button type="button" [class.selected]="systemService.platform() === 'ios'" [disabled]="deviceSelectionLocked()" (click)="choosePlatform('ios')">iOS · iPhone / iPad</button>
+            <button type="button" [disabled]="systemService.isLoading()" (click)="refreshDevices()">{{ 'Refresh' | t }}</button>
+          </div>
+          @if (systemService.platform() === 'ios') {
+            <label>{{ 'Device' | t }}<select [(ngModel)]="iosDeviceId" [disabled]="deviceSelectionLocked()">
+                <option value="">{{ 'Select iPhone / iPad' | t }}</option>
+                @for (device of systemService.iosDevices(); track device.udid) {
+                  <option [value]="device.udid" [disabled]="!device.connected">{{ device.name || device.udid }} · {{ device.kind === 'simulator' ? ('Simulator' | t) + ' · ' + (device.state | t) : (device.connected ? ('USB connected' | t) : ('Offline' | t)) }}</option>
+                }
+              </select>
+            </label>
+            <label>{{ 'WebDriverAgent URL' | t }}<input type="url" [(ngModel)]="iosWdaUrl" [disabled]="deviceSelectionLocked()" placeholder="http://127.0.0.1:8102"></label>
+            <p>{{ 'Use the WDA address for the selected device. Each simulator needs its own port.' | t }}</p>
+          } @else {
+            <label>{{ 'Device' | t }}<select [(ngModel)]="androidDeviceId" [disabled]="deviceSelectionLocked()">
+                <option value="">{{ 'Select Android device' | t }}</option>
+                @for (device of systemService.connectedDevices(); track device.serial) {
+                  <option [value]="device.serial" [disabled]="device.state !== 'device'">{{ device.model || device.serial }} · {{ device.serial }} · {{ device.state }}</option>
+                }
+              </select>
+            </label>
+            @if (!systemService.connectedDevices().length) { <p>{{ 'No Android devices found. Connect a device or start an emulator, then refresh.' | t }}</p> }
+          }
+          <button type="button" class="connect-device" [disabled]="deviceSelectionLocked() || (systemService.platform() === 'ios' ? (!iosDeviceId || !iosWdaUrl.trim()) : !androidDeviceId)" (click)="connectDevice()">{{ systemService.iosBusy() ? ('Connecting…' | t) : ('Connect device' | t) }}</button>
+          @if (deviceSelectionLocked() && !systemService.iosBusy() && !systemService.isLoading()) { <p role="status">{{ 'Device switching is unavailable while tasks are running or queued.' | t }}</p> }
+          @if (systemService.platform() === 'ios' && systemService.iosStatus()?.platform === 'ios') { <p role="status">{{ (systemService.iosStatus()?.message) | t }}</p> }
+          @if (deviceError() || systemService.iosError()) { <p class="device-error" role="alert">{{ (deviceError() || systemService.iosError()) | t }}</p> }
+        </div>
+      }
+    </section>
     <app-agent-stream></app-agent-stream>
 
     <!-- Bottom Floating Command Bar Dock -->
@@ -26,8 +74,8 @@ limitations under the License.
       @if (errorMessage()) {
         <div class="floating-dock-toast error">
           <span class="material-symbols-outlined toast-icon">error</span>
-          <span class="toast-text">{{ errorMessage() }}</span>
-          <button type="button" class="btn-toast-close" (click)="errorMessage.set(null)" aria-label="Close error message">
+          <span class="toast-text">{{ (errorMessage()) | t }}</span>
+          <button type="button" class="btn-toast-close" (click)="errorMessage.set(null)" [attr.aria-label]="'Close error message' | t">
             <span class="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -89,7 +137,7 @@ limitations under the License.
 
           <!-- Dormant / Capsule Peek View (Visible when mouse is away and input idle) -->
           <div class="capsule-peek-view">
-            <span class="capsule-placeholder">Start a new task...</span>
+            <span class="capsule-placeholder">{{ 'Start a new task...' | t }}</span>
           </div>
 
           <!-- Expanded Full View Content (Visible on hover, focus, or text) -->
@@ -105,8 +153,8 @@ limitations under the License.
                   rows="1"
                   [disabled]="isSubmitting()"
                   [placeholder]="selectedProfile() === 'pro' 
-                    ? 'Pro: plans first, checks results and recovers from blocked steps. For long or complex tasks'
-                    : 'Flash: fast single-look loop for everyday app tasks'"
+                    ? ('Pro: plans first, checks results and recovers from blocked steps. For long or complex tasks' | t)
+                    : ('Flash: fast single-look loop for everyday app tasks' | t)"
                   class="dock-textarea"
                   spellcheck="false"
                 ></textarea>
@@ -115,7 +163,7 @@ limitations under the License.
               <!-- Clear Button (visible when text is entered) -->
               @if (taskInput.trim() && !isSubmitting()) {
                 <button type="button" class="dock-circle-btn btn-clear"
-                  (click)="clearInput($event)" title="Clear input text" aria-label="Clear input text">
+                  (click)="clearInput($event)" [title]="'Clear input text' | t" [attr.aria-label]="'Clear input text' | t">
                   <span class="material-symbols-outlined">close</span>
                 </button>
               }
@@ -155,13 +203,13 @@ limitations under the License.
                 <div class="model-profile-toggle" role="group" aria-label="Select Agent Architecture">
                   <button type="button" class="profile-toggle-pill" [class.active]="selectedProfile() === 'flash'"
                     (mousedown)="$event.preventDefault()" (click)="setProfile('flash', $event)"
-                    title="Flash: fast single-look loop for everyday app tasks (3–5s/step)">
+                    [title]="'Flash: fast single-look loop for everyday app tasks (3–5s/step)' | t">
                     <span class="material-symbols-outlined pill-icon icon-flash">bolt</span>
                     <span class="pill-label">Flash</span>
                   </button>
                   <button type="button" class="profile-toggle-pill" [class.active]="selectedProfile() === 'pro'"
                     (mousedown)="$event.preventDefault()" (click)="setProfile('pro', $event)"
-                    title="Pro: plans first, checks results and recovers from blocked steps. For long or complex tasks (15–40s/step)">
+                    [title]="'Pro: plans first, checks results and recovers from blocked steps. For long or complex tasks (15–40s/step)' | t">
                     <span class="material-symbols-outlined pill-icon icon-pro">psychology</span>
                     <span class="pill-label">Pro</span>
                   </button>

@@ -1,3 +1,5 @@
+import { LocaleService } from '../../i18n/locale.service';
+import { TranslatePipe } from '../../i18n/translate.pipe';
 /**
  * Copyright 2026 Google LLC
  *
@@ -103,14 +105,18 @@ type AdbGuideTab = 'emulator' | 'usb' | 'wifi' | 'remote';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [FormsModule],
+  imports: [TranslatePipe, FormsModule],
   templateUrl: './home.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './home.component.scss'
 })
 export class HomeComponent implements OnInit, OnDestroy {
+  public locale = inject(LocaleService);
   public agentService = inject(AgentService);
   public systemService = inject(SystemService);
+  public showIosPreview = signal(false);
+  public iosDeviceId = "";
+  public iosWdaUrl = "";
   public taskRecService = inject(TaskRecommendationService);
   private router = inject(Router);
 
